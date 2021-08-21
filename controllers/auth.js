@@ -20,6 +20,31 @@ exports.register = async (req, res, next) => {
     }
 };
 
+exports.login = async (req, res, next) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+      return next(new ErrorResponse("Email or password not provided", 400));
+  }
+
+  try {
+      const user = await User.findOne({ email }).select("+password");
+      if (!user) {
+          return next(new ErrorResponse("User not found or invalid", 404));
+      }
+
+      const isMatch = await user.matchPasswords(password);
+
+      if (!isMatch) {
+          return next(new ErrorResponse("Password not valid", 401));
+      }
+
+      sendToken(user, 200, res);
+  } catch (error) {
+      return next(new ErrorResponse(error.message, 500));
+  }
+};
+
 exports.forgotpassword = async (req, res, next) => {
     const { email } = req.body;
 
